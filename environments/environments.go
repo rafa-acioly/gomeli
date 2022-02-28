@@ -1,29 +1,5 @@
 package environments
 
-type site string
-
-const (
-	ARGENTINA  site = "MLA"
-	BOLIVIA    site = "MBO"
-	BRASIL     site = "MLB"
-	COLOMBIA   site = "MCO"
-	COSTA_RICA site = "MCR"
-	EQUADOR    site = "MEC"
-	HONDURAS   site = "MHN"
-	GUATEMALA  site = "MGT"
-	CHILE      site = "MLC"
-	MEXICO     site = "MLM"
-	NICARAGUA  site = "MNI"
-	PARAGUAI   site = "MPY"
-	SALVADOR   site = "MSV"
-	URUGUAI    site = "MLU"
-	VENEZUELA  site = "MLV"
-	PANAMA     site = "MPA"
-	PERU       site = "MPE"
-	PORTUGAL   site = "MPT"
-	DOMINICANA site = "MRD"
-)
-
 type Storage interface {
 	Set(name, value string) error
 	Get(name string) interface{}
