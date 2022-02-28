@@ -2,13 +2,14 @@ package meli
 
 import (
 	"meli/environments"
+	env "meli/environments"
 	"net/http"
 	"time"
 )
 
 // AnnouncementManager is the contract to announcements
 type AnnouncementManager interface {
-	Create(a environments.Item)
+	Create(a environments.Item) (env.ItemResponse, error)
 	Update(code string, data []string)
 	Delete(code string)
 	ChangeStatus(code, status string) // status should be a constant of available statuses
@@ -25,7 +26,7 @@ type announcementManager struct {
 }
 
 // Create send a POST request to create a new product
-func (am announcementManager) Create(a environments.Item) {
+func (am announcementManager) Create(a env.Item) (env.ItemResponse, error) {
 	panic("implement me")
 }
 

@@ -96,7 +96,10 @@ func main() {
 
     cli := meli.Newclient("app-id", "secret-id")
     announcement := meli.NewAnnouncement(cli)
-    response := announcement.Create(item)
+    response, err := announcement.Create(item)
+    if err != nil {
+        panic(err.Error())
+    }
 
     fmt.Println(response.Permalink)
 }
