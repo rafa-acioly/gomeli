@@ -1,35 +1,20 @@
 package environments
 
-type Environment interface {
-	GetWsHost() string
-	GetOAuthURI() string
-	GetWsAuth() map[site]string
-	EnvironmentConfig
-}
-
-type production struct {
+type sandbox struct {
 	wsHost   string
 	oauthURI string
 	env      EnvironmentConfig
 }
 
-func (p production) GetSite() site {
-	return p.env.GetSite()
+func (s sandbox) GetWsHost() string {
+	return s.wsHost
 }
 
-func (p production) GetConfiguration() Configuration {
-	return p.env.GetConfiguration()
+func (s sandbox) GetOAuthURI() string {
+	return s.oauthURI
 }
 
-func (p production) GetWsHost() string {
-	return p.wsHost
-}
-
-func (p production) GetOAuthURI() string {
-	return p.oauthURI
-}
-
-func (p production) GetWsAuth() map[site]string {
+func (s sandbox) GetWsAuth() map[site]string {
 	return map[site]string{
 		ARGENTINA:  "https://auth.mercadolibre.com.ar",
 		BOLIVIA:    "https://auth.mercadolibre.com.bo",
@@ -53,8 +38,16 @@ func (p production) GetWsAuth() map[site]string {
 	}
 }
 
-func NewProductionEnv(s site, c Configuration) Environment {
-	return &production{
+func (s sandbox) GetSite() site {
+	return s.env.GetSite()
+}
+
+func (s sandbox) GetConfiguration() Configuration {
+	return s.env.GetConfiguration()
+}
+
+func NewSandboxEnv(s site, c Configuration) Environment {
+	return &sandbox{
 		wsHost:   "https://api.mercadolibre.com",
 		oauthURI: "/oauth/token",
 		env:      NewEnvironmentConfig(s, c),
