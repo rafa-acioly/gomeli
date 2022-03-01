@@ -1,4 +1,4 @@
-package environments
+package announcements
 
 type AttributeValue struct {
 	ID   string `json:"id"`
@@ -82,7 +82,7 @@ type Item struct {
 	VideoID           string        `json:"video_id"`
 	Tags              []string      `json:"tags"`
 	Warranty          string        `json:"warranty"`
-	Status            string        `json:"status"`
+	Status            status        `json:"status"`
 	Shipping          Shipping      `json:"shipping"`
 	SellerAddress     SellerAddress `json:"seller_address"`
 	Location          Location      `json:"location"`
@@ -169,8 +169,8 @@ func (i *Item) SetWarranty(warranty string) *Item {
 	return i
 }
 
-func (i *Item) SetStatus(status string) *Item {
-	i.Status = status
+func (i *Item) SetStatus(s status) *Item {
+	i.Status = s
 
 	return i
 }

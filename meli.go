@@ -9,7 +9,7 @@ type Meli interface {
 	GetClientSecret() string
 	GetUserID() string
 	GetTenantID() string
-	GetEnvironment() env.EnvironmentConfig
+	GetEnvironment() env.Environment
 }
 
 type meli struct {
@@ -17,7 +17,7 @@ type meli struct {
 	clientSecret string
 	userID       string
 	tenantID     string
-	environment  env.EnvironmentConfig
+	environment  env.Environment
 }
 
 func (m meli) GetClientID() string {
@@ -36,11 +36,11 @@ func (m meli) GetTenantID() string {
 	return m.tenantID
 }
 
-func (m meli) GetEnvironment() env.EnvironmentConfig {
+func (m meli) GetEnvironment() env.Environment {
 	return m.environment
 }
 
-func NewClient(clientID, clientSecret string, env env.EnvironmentConfig) Meli {
+func NewClient(clientID, clientSecret string, env env.Environment) Meli {
 	return &meli{
 		clientID:     clientID,
 		clientSecret: clientSecret,
