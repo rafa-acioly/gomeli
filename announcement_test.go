@@ -15,7 +15,7 @@ type AnnouncementTestSuite struct {
 
 func (test AnnouncementTestSuite) SetupTest() {
 	testEnv := environments.NewSandboxEnv(environments.BRASIL, environments.NewConfiguration(nil))
-	test.m = NewClient("client-id", "client-secret", testEnv)
+	test.m = NewCustomClient("client-id", "client-secret", testEnv)
 	test.manager = NewAnnouncement(test.m)
 }
 

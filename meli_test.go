@@ -22,7 +22,7 @@ func (test MeliTestSuite) SetupTest() {
 }
 
 func (test MeliTestSuite) CanCreateAClientInstance() {
-	cli := NewClient("client-id", "client-secret", test.env)
+	cli := NewCustomClient("client-id", "client-secret", test.env)
 
 	assert.Equal(test.T(), cli.GetClientID(), "client-id")
 	assert.Equal(test.T(), cli.GetClientSecret(), "client-secret")

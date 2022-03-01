@@ -2,6 +2,7 @@ package meli
 
 import (
 	env "meli/environments"
+	storage2 "meli/storage"
 )
 
 type Meli interface {
@@ -40,10 +41,22 @@ func (m meli) GetEnvironment() env.Environment {
 	return m.environment
 }
 
-func NewClient(clientID, clientSecret string, env env.Environment) Meli {
+// NewCustomClient retrieves a client with custom configuration for storage, site and environment
+func NewCustomClient(clientID, clientSecret string, env env.Environment) Meli {
 	return &meli{
 		clientID:     clientID,
 		clientSecret: clientSecret,
 		environment:  env,
+	}
+}
+
+// NewClient retrieves a client with pre-defined configuration
+// storage used is in-memory and default site is Brazil
+func NewClient(appID, clientSecret string) Meli {
+	storage := storage2.NewInMemoryCache()
+	return &meli{
+		clientID:     appID,
+		clientSecret: clientSecret,
+		environment:  env.NewProductionEnv(env.BRASIL, env.NewConfiguration(storage)),
 	}
 }
