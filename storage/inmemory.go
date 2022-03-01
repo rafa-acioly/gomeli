@@ -16,7 +16,7 @@ func (mc inMemoryCache) Set(key, value string) error {
 }
 
 func (mc inMemoryCache) Get(key string) (string, error) {
-	if result, found := mc.client.Get(key); !found {
+	if result, found := mc.client.Get(key); found {
 		return result.(string), nil
 	}
 
@@ -25,6 +25,11 @@ func (mc inMemoryCache) Get(key string) (string, error) {
 
 func (mc inMemoryCache) Remove(key string) error {
 	mc.client.Delete(key)
+	return nil
+}
+
+func (mc inMemoryCache) Flush() error {
+	mc.client.Flush()
 	return nil
 }
 
