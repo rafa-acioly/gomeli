@@ -7,6 +7,7 @@ import (
 	"meli/announcements"
 	"meli/responses"
 	"net/http"
+	"time"
 )
 
 // AnnouncementManager is the contract to announcements
@@ -214,7 +215,9 @@ func (manager announcementManager) UseClient(cli http.Client) {
 // NewAnnouncement return an announcement manager to handle announcements on mercado's livre API
 func NewAnnouncement(m Meli) AnnouncementManager {
 	return &announcementManager{
-		m:   m,
-		cli: http.Client{},
+		m: m,
+		cli: http.Client{
+			Timeout: time.Second * 15,
+		},
 	}
 }
