@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"meli/announcements"
 	"meli/responses"
 	"net/http"
@@ -35,7 +36,7 @@ type announcementManager struct {
 // more information: http://developers.mercadolibre.com/list-products/#ListAnItem
 func (manager announcementManager) Create(a announcements.Item) (responses.Item, error) {
 	content, _ := json.Marshal(a)
-	_, err := manager.cli.Post(
+	response, err := manager.cli.Post(
 		manager.m.GetEnvironment().GetWsURL("/items"),
 		"application/json",
 		bytes.NewBuffer(content),
@@ -44,7 +45,18 @@ func (manager announcementManager) Create(a announcements.Item) (responses.Item,
 		return responses.Item{}, err
 	}
 
-	return responses.Item{}, nil
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return responses.Item{}, err
+	}
+
+	var item responses.Item
+	err = json.Unmarshal(body, &item)
+	if err != nil {
+		return responses.Item{}, err
+	}
+
+	return item, nil
 }
 
 // Update send a PUT request to update a existing product
