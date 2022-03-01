@@ -1,27 +1,21 @@
 package environments
 
-// Storage will be used to store request tokens
-type Storage interface {
-	Set(name, value string) error
-	Get(name string) interface{}
-	Has(name string) bool
-	Remove(name string) error
-}
+import "meli/storage"
 
 // Configuration determine the resources that will be used
 type Configuration interface {
-	GetStorage() Storage
+	GetStorage() storage.Storage
 }
 
 type configuration struct {
-	storage Storage
+	storage storage.Storage
 }
 
-func (c configuration) GetStorage() Storage {
+func (c configuration) GetStorage() storage.Storage {
 	return c.storage
 }
 
-func NewConfiguration(storage Storage) Configuration {
+func NewConfiguration(storage storage.Storage) Configuration {
 	return &configuration{
 		storage: storage,
 	}
