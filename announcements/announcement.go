@@ -1,9 +1,9 @@
-package meli
+package announcements
 
 import (
 	"encoding/json"
 	"fmt"
-	"meli/announcements"
+	"meli"
 	"meli/responses"
 )
 
@@ -11,38 +11,33 @@ import (
 // announcement means some sort of offer made on the marketplace
 // it can be a product or an auction
 type AnnouncementManager interface {
-	Create(a announcements.Item) (responses.Item, error)
+	Create(a Item) (responses.Item, error)
 	Update(code string, data map[string]string) (responses.Item, error)
 	Delete(code string) error
 	ChangeStatus(code, status string) error // status should be a constant of available statuses
 	SendDescription(code, desc string) error
 	ChangeDescription(code, desc string) error
-	AddVariation(code string, v announcements.Variation) error
-	ChangeVariation(code string, vs []announcements.Variation) error
+	AddVariation(code string, v Variation) error
+	ChangeVariation(code string, vs []Variation) error
 	DeleteVariation(code, variationCode string) error
-	UseClient(cli HttpClientWrapper)
+	UseClient(cli meli.HttpClientWrapper)
 }
 
 type announcementManager struct {
-	m   Meli
-	cli HttpClientWrapper
+	m   meli.Meli
+	cli meli.HttpClientWrapper
 }
 
 // Create send a POST request to create a new product
 // more information: http://developers.mercadolibre.com/list-products/#ListAnItem
-func (manager announcementManager) Create(a announcements.Item) (responses.Item, error) {
+func (manager announcementManager) Create(a Item) (responses.Item, error) {
 	response, err := manager.cli.Post("/items", a)
 	if err != nil {
 		return responses.Item{}, err
 	}
 
-	body, err := response.GetBody()
-	if err != nil {
-		return responses.Item{}, err
-	}
-
 	var item responses.Item
-	if err := json.Unmarshal(body, &item); err != nil {
+	if err := json.Unmarshal(response.Body(), &item); err != nil {
 		return responses.Item{}, err
 	}
 
@@ -57,13 +52,8 @@ func (manager announcementManager) Update(code string, data map[string]string) (
 		return responses.Item{}, err
 	}
 
-	body, err := response.GetBody()
-	if err != nil {
-		return responses.Item{}, err
-	}
-
 	var item responses.Item
-	if err := json.Unmarshal(body, &item); err != nil {
+	if err := json.Unmarshal(response.Body(), &item); err != nil {
 		return responses.Item{}, err
 	}
 
@@ -119,7 +109,7 @@ func (manager announcementManager) ChangeDescription(code string, desc string) e
 
 // AddVariation will add a new variation on the product
 // more information: https://developers.mercadolivre.com.br/pt_br/publicacao-de-produtos#Variacoes
-func (manager announcementManager) AddVariation(code string, v announcements.Variation) error {
+func (manager announcementManager) AddVariation(code string, v Variation) error {
 	_, err := manager.cli.Put("/items"+code, v)
 	if err != nil {
 		return err
@@ -130,7 +120,7 @@ func (manager announcementManager) AddVariation(code string, v announcements.Var
 
 // ChangeVariation will change all product variations, this has the same behaviour as updating
 // more information: https://developers.mercadolibre.com/pt_br/variacoes#Modificar-varia%C3%A7%C3%B5es
-func (manager announcementManager) ChangeVariation(code string, vs []announcements.Variation) error {
+func (manager announcementManager) ChangeVariation(code string, vs []Variation) error {
 	_, err := manager.cli.Put("/items"+code, vs)
 	if err != nil {
 		return err
@@ -151,14 +141,14 @@ func (manager announcementManager) DeleteVariation(code string, variationCode st
 }
 
 // UseClient will redefine an HTTP Client used to make API calls
-func (manager announcementManager) UseClient(cli HttpClientWrapper) {
+func (manager announcementManager) UseClient(cli meli.HttpClientWrapper) {
 	manager.cli = cli
 }
 
 // NewAnnouncement return an announcement manager to handle announcements on mercado's livre API
-func NewAnnouncement(m Meli) AnnouncementManager {
+func NewAnnouncement(m meli.Meli) AnnouncementManager {
 	return announcementManager{
 		m:   m,
-		cli: NewHttpClient(m),
+		cli: meli.NewHttpClient(m),
 	}
 }

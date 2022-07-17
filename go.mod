@@ -3,6 +3,7 @@ module meli
 go 1.16
 
 require (
+	github.com/go-resty/resty/v2 v2.7.0
 	github.com/idoubi/goutils v1.0.1 // indirect
 	github.com/idoubi/goz v1.2.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible

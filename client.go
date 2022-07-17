@@ -1,36 +1,23 @@
 package meli
 
 import (
-	"github.com/idoubi/goz"
+	"github.com/go-resty/resty/v2"
+	"time"
 )
 
-func buildHttpClient(m Meli) *goz.Request {
-	return goz.NewClient(goz.Options{
-		Debug:   true,
-		BaseURI: m.GetEnvironment().GetWsHost(),
-		Timeout: 15,
-		Headers: map[string]interface{}{
-			"User-Agent":   "MELI-GOLANG-SDK",
-			"Content-Type": "application/json; charset=utf-8",
-			"verify":       true,
-		},
-		Query: map[string]interface{}{},
-	})
-}
-
 type HttpClientWrapper interface {
-	Get(resource string) (*goz.Response, error)
-	Post(resource string, data interface{}) (*goz.Response, error)
-	Put(resource string, data interface{}) (*goz.Response, error)
-	Delete(resource string, data interface{}) (*goz.Response, error)
+	Get(resource string) (*resty.Response, error)
+	Post(resource string, data interface{}) (*resty.Response, error)
+	Put(resource string, data interface{}) (*resty.Response, error)
+	Delete(resource string, data interface{}) (*resty.Response, error)
 }
 
 type httpClientWrapper struct {
-	cli *goz.Request
+	cli *resty.Request
 }
 
-func (h httpClientWrapper) Post(resource string, data interface{}) (*goz.Response, error) {
-	response, err := h.cli.Post(resource, goz.Options{JSON: data})
+func (h httpClientWrapper) Post(resource string, data interface{}) (*resty.Response, error) {
+	response, err := h.cli.SetBody(data).Post(resource)
 	if err != nil {
 		return response, err
 	}
@@ -38,8 +25,8 @@ func (h httpClientWrapper) Post(resource string, data interface{}) (*goz.Respons
 	return response, nil
 }
 
-func (h httpClientWrapper) Put(resource string, data interface{}) (*goz.Response, error) {
-	response, err := h.cli.Put(resource, goz.Options{JSON: data})
+func (h httpClientWrapper) Put(resource string, data interface{}) (*resty.Response, error) {
+	response, err := h.cli.SetBody(data).Put(resource)
 	if err != nil {
 		return response, err
 	}
@@ -47,8 +34,8 @@ func (h httpClientWrapper) Put(resource string, data interface{}) (*goz.Response
 	return response, nil
 }
 
-func (h httpClientWrapper) Delete(resource string, data interface{}) (*goz.Response, error) {
-	response, err := h.cli.Delete(resource, goz.Options{JSON: data})
+func (h httpClientWrapper) Delete(resource string, data interface{}) (*resty.Response, error) {
+	response, err := h.cli.SetBody(data).Delete(resource)
 	if err != nil {
 		return response, err
 	}
@@ -56,7 +43,7 @@ func (h httpClientWrapper) Delete(resource string, data interface{}) (*goz.Respo
 	return response, nil
 }
 
-func (h httpClientWrapper) Get(resource string) (*goz.Response, error) {
+func (h httpClientWrapper) Get(resource string) (*resty.Response, error) {
 	response, err := h.cli.Get(resource)
 	if err != nil {
 		return response, err
@@ -66,17 +53,14 @@ func (h httpClientWrapper) Get(resource string) (*goz.Response, error) {
 }
 
 func NewHttpClient(m Meli) HttpClientWrapper {
-	return httpClientWrapper{
-		cli: goz.NewClient(goz.Options{
-			Debug:   true,
-			BaseURI: m.GetEnvironment().GetWsHost(),
-			Timeout: 15,
-			Headers: map[string]interface{}{
-				"User-Agent":   "MELI-GOLANG-SDK",
-				"Content-Type": "application/json; charset=utf-8",
-				"verify":       true,
-			},
-			Query: map[string]interface{}{},
-		}),
+	return httpClientWrapper{cli: resty.New().
+		SetTimeout(time.Minute * 1).
+		SetDebug(true).
+		SetBaseURL(m.GetEnvironment().GetWsHost()).
+		SetHeaders(map[string]string{
+			"User-Agent":   "MELI-GOLANG-SDK",
+			"Content-Type": "application/json; charset=utf-8",
+			"verify":       "true",
+		}).R(),
 	}
 }

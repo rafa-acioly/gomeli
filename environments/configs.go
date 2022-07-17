@@ -6,8 +6,8 @@ const (
 	// Mercado livre does not have a sandbox environment yet,
 	// every transaction will be made on the main api.
 	// this separation will serve in case they implement a test environment
-	wsHostProduction = "https://api.mercadolibre.com"
-	wsHostSandbox    = "https://api.mercadolibre.com"
+	wsHostProduction = "http://api.mercadolibre.com"
+	wsHostSandbox    = "http://api.mercadolibre.com"
 
 	oauthURIProduction = "/oauth/token"
 	oauthURISandbox    = "/oauth/token"
