@@ -1,13 +1,16 @@
-package meli
+package services
 
-import "net/http"
+import (
+	"meli"
+	"net/http"
+)
 
 type BaseService interface {
-	GetMeli() Meli
+	GetMeli() meli.Meli
 	GetCli() *http.Client
 }
 
 type baseService struct {
-	m   Meli
+	m   meli.Meli
 	cli *http.Client
 }

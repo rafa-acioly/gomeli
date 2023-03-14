@@ -9,12 +9,12 @@ type sandbox struct {
 
 // GetSite returns the country that the integration must be done
 func (p sandbox) GetSite() site {
-	return p.GetSite()
+	return p.site
 }
 
 // GetConfiguration returns the configuration os the resources
 func (p sandbox) GetConfiguration() Configuration {
-	return p.GetConfiguration()
+	return p.config
 }
 
 // GetWsHost returns the WebService Host endpoint

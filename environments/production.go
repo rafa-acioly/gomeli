@@ -1,17 +1,5 @@
 package environments
 
-// Environment defines the contract that need to be used for each environment
-// e.g: production, sandbox, staging and etc
-type Environment interface {
-	GetWsHost() string
-	GetWsAuth() string
-	GetWsURL(resource string) string
-	GetOAuthURI() string
-	GetAuthURL(resource string) string
-	GetSite() site
-	GetConfiguration() Configuration
-}
-
 type production struct {
 	wsHost   string
 	oauthURI string
@@ -21,12 +9,12 @@ type production struct {
 
 // GetSite returns the country that the integration must be done
 func (p production) GetSite() site {
-	return p.GetSite()
+	return p.site
 }
 
 // GetConfiguration returns the configuration os the resources
 func (p production) GetConfiguration() Configuration {
-	return p.GetConfiguration()
+	return p.config
 }
 
 // GetWsHost returns the WebService Host endpoint

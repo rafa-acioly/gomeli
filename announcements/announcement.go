@@ -1,154 +1,268 @@
 package announcements
 
-import (
-	"encoding/json"
-	"fmt"
-	"meli"
-	"meli/responses"
-)
+import "time"
 
-// AnnouncementManager is the contract to announcements
-// announcement means some sort of offer made on the marketplace
-// it can be a product or an auction
-type AnnouncementManager interface {
-	Create(a Item) (responses.Item, error)
-	Update(code string, data map[string]string) (responses.Item, error)
-	Delete(code string) error
-	ChangeStatus(code, status string) error // status should be a constant of available statuses
-	SendDescription(code, desc string) error
-	ChangeDescription(code, desc string) error
-	AddVariation(code string, v Variation) error
-	ChangeVariation(code string, vs []Variation) error
-	DeleteVariation(code, variationCode string) error
-	UseClient(cli meli.HttpClientWrapper)
+// Announcement represents response content returned by mercado livre's API
+type Announcement struct {
+	ID                string    `json:"id"`
+	SiteID            string    `json:"site_id"`
+	Title             string    `json:"title"`
+	Subtitle          string    `json:"subtitle"`
+	SellerID          string    `json:"seller_id"`
+	CategoryID        string    `json:"category_id"`
+	Price             float64   `json:"price"`
+	BasePrice         float64   `json:"base_price"`
+	OriginalPrice     float64   `json:"original_price"`
+	CurrencyID        string    `json:"currency_id"`
+	InitialQuantity   int       `json:"initial_quantity"`
+	AvailableQuantity int       `json:"available_quantity"`
+	SoldQuantity      int       `json:"sold_quantity"`
+	BuyingMode        string    `json:"buying_mode"`
+	ListingTypeID     string    `json:"listing_type_id"`
+	StartTime         time.Time `json:"start_time"`
+	StopTime          time.Time `json:"stop_time"`
+	EndTime           time.Time `json:"end_time"`
+	ExpirationTime    time.Time `json:"expiration_time"`
+	Condition         string    `json:"condition"`
+	Thumbnail         string    `json:"thumbnail"`
+	SecureThumbnail   string    `json:"secure_thumbnail"`
+	VideoID           string    `json:"video_id"`
+	Warranty          string    `json:"warranty"`
+	DateCreated       time.Time `json:"date_created"`
+	LastUpdated       time.Time `json:"last_updated"`
+	Permalink         string    `json:"permalink"`
 }
 
-type announcementManager struct {
-	m   meli.Meli
-	cli meli.HttpClientWrapper
+type AttributeValue struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
-// Create send a POST request to create a new product
-// more information: http://developers.mercadolibre.com/list-products/#ListAnItem
-func (manager announcementManager) Create(a Item) (responses.Item, error) {
-	response, err := manager.cli.Post("/items", a)
-	if err != nil {
-		return responses.Item{}, err
-	}
-
-	var item responses.Item
-	if err := json.Unmarshal(response.Body(), &item); err != nil {
-		return responses.Item{}, err
-	}
-
-	return item, nil
+type AttributeCombination struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	ValueID   string `json:"value_id"`
+	ValueName string `json:"value_name"`
 }
 
-// Update send a PUT request to update a existing product
-// more information: http://developers.mercadolibre.com/products-sync-listings/#Update-your-item
-func (manager announcementManager) Update(code string, data map[string]string) (responses.Item, error) {
-	response, err := manager.cli.Put("/items"+code, data)
-	if err != nil {
-		return responses.Item{}, err
-	}
-
-	var item responses.Item
-	if err := json.Unmarshal(response.Body(), &item); err != nil {
-		return responses.Item{}, err
-	}
-
-	return item, nil
+type Attribute struct {
+	ID           string           `json:"id"`
+	Name         string           `json:"name"`
+	Hierarchy    string           `json:"hierarchy"`
+	ValueType    string           `json:"value_type"`
+	ValueName    string           `json:"value_name"`
+	ValueID      string           `json:"value_id"`
+	Tags         []string         `json:"tags"`
+	Values       []AttributeValue `json:"values"`
+	AllowedUnits []string         `json:"allowed_units"`
 }
 
-// Delete will mark a product as deleted
-// more information: http://developers.mercadolibre.com/products-sync-listings/#Delete-listing
-func (manager announcementManager) Delete(code string) error {
-	requestContent := map[string]string{"deleted": "true"}
-	_, err := manager.cli.Delete("/item"+code, requestContent)
-	if err != nil {
-		return err
-	}
-
-	return nil
+type Variation struct {
+	ID                    string                 `json:"id"`
+	AttributeCombinations []AttributeCombination `json:"attribute_combinations"`
+	Price                 float64                `json:"price"`
+	AvailableQuantity     int                    `json:"available_quantity"`
+	Attributes            []Attribute            `json:"attributes"`
+	SoldQuantity          int                    `json:"sold_quantity"`
+	PictureIDS            []string               `json:"picture_ids"`
 }
 
-// ChangeStatus wil change the current status of the product
-// be aware that the status follow a status machine, once the status changes
-// you cannot change it to the previous status
-// more information: http://developers.mercadolibre.com/products-sync-listings/#Changing-listing-status
-func (manager announcementManager) ChangeStatus(code string, status string) error {
-	requestContent := map[string]string{"status": status}
-	_, err := manager.cli.Put("/items"+code, requestContent)
-	if err != nil {
-		return err
-	}
-
-	return nil
+type Location struct {
+	AddressLine string `json:"address_line"`
+	ZipCode     string `json:"zip_code"`
+	City        string `json:"city"`
+	State       string `json:"state"`
+	Country     string `json:"country"`
+	Latitude    string `json:"latitude"`
+	Longitude   string `json:"longitude"`
 }
 
-// SendDescription will set the description of the product.
-// Since september 1st 2021 the product description should be defined on a separate request
-// and no longer with the announcement creation
-// more information: https://developers.mercadolivre.com.br/pt_br/publicacao-de-produtos#Description
-func (manager announcementManager) SendDescription(code, desc string) error {
-	return manager.ChangeDescription(code, desc)
+type SellerAddress struct {
+	ID          string `json:"id"`
+	Comment     string `json:"comment"`
+	AddressLine string `json:"address_line"`
+	ZipCode     string `json:"zip_code"`
+	City        string `json:"city"`
+	State       string `json:"state"`
+	Country     string `json:"country"`
+	Latitude    string `json:"latitude"`
+	Longitude   string `json:"longitude"`
 }
 
-// ChangeDescription will change a product description, some characters are not allowed
-// by mercado's livre such as HTML tags.
-// more information: https://developers.mercadolivre.com.br/pt_br/descricao-de-produtos
-func (manager announcementManager) ChangeDescription(code string, desc string) error {
-	requestContent := map[string]string{"plain_text": desc}
-	_, err := manager.cli.Put("/items"+code, requestContent)
-	if err != nil {
-		return err
-	}
-
-	return nil
+type Shipping struct {
+	Mode         string   `json:"mode"`
+	LocalPickUp  bool     `json:"local_pick_up"`
+	FreeShipping bool     `json:"free_shipping"`
+	Dimensions   string   `json:"dimensions"`
+	Tags         []string `json:"tags"`
 }
 
-// AddVariation will add a new variation on the product
-// more information: https://developers.mercadolivre.com.br/pt_br/publicacao-de-produtos#Variacoes
-func (manager announcementManager) AddVariation(code string, v Variation) error {
-	_, err := manager.cli.Put("/items"+code, v)
-	if err != nil {
-		return err
-	}
-
-	return nil
+type Picture struct {
+	Source string `json:"source"`
 }
 
-// ChangeVariation will change all product variations, this has the same behaviour as updating
-// more information: https://developers.mercadolibre.com/pt_br/variacoes#Modificar-varia%C3%A7%C3%B5es
-func (manager announcementManager) ChangeVariation(code string, vs []Variation) error {
-	_, err := manager.cli.Put("/items"+code, vs)
-	if err != nil {
-		return err
-	}
-
-	return nil
+type AnnouncementRequest struct {
+	ID                string        `json:"id"`
+	Title             string        `json:"title"`
+	CategoryID        string        `json:"category_id"`
+	Price             float64       `json:"price"`
+	CurrencyID        string        `json:"currency_id"`
+	AvailableQuantity int           `json:"available_quantity"`
+	BuyingMode        string        `json:"buying_mode"`
+	ListingTypeID     string        `json:"listing_type_id"`
+	Condition         string        `json:"condition"`
+	Description       string        `json:"description"`
+	VideoID           string        `json:"video_id"`
+	Tags              []string      `json:"tags"`
+	Warranty          string        `json:"warranty"`
+	Status            status        `json:"status"`
+	Shipping          Shipping      `json:"shipping"`
+	SellerAddress     SellerAddress `json:"seller_address"`
+	Location          Location      `json:"location"`
+	Pictures          []Picture     `json:"pictures"`
+	Attributes        []Attribute   `json:"attributes"`
+	Variations        []Variation   `json:"variations"`
 }
 
-// DeleteVariation will remove completely a variation of a product
-// more information: https://developers.mercadolibre.com/pt_br/variacoes#Remover-varia%C3%A7%C3%B5es
-func (manager announcementManager) DeleteVariation(code string, variationCode string) error {
-	_, err := manager.cli.Delete(fmt.Sprintf("/items/%s/variations/%s/", code, variationCode), nil)
-	if err != nil {
-		return err
-	}
+func (i *AnnouncementRequest) SetID(id string) *AnnouncementRequest {
+	i.ID = id
 
-	return nil
+	return i
 }
 
-// UseClient will redefine an HTTP Client used to make API calls
-func (manager announcementManager) UseClient(cli meli.HttpClientWrapper) {
-	manager.cli = cli
+func (i *AnnouncementRequest) SetTitle(title string) *AnnouncementRequest {
+	i.Title = title
+
+	return i
 }
 
-// NewAnnouncement return an announcement manager to handle announcements on mercado's livre API
-func NewAnnouncement(m meli.Meli) AnnouncementManager {
-	return announcementManager{
-		m:   m,
-		cli: meli.NewHttpClient(m),
-	}
+func (i *AnnouncementRequest) SetCategoryID(id string) *AnnouncementRequest {
+	i.CategoryID = id
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetPrice(price float64) *AnnouncementRequest {
+	i.Price = price
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetCurrencyID(id string) *AnnouncementRequest {
+	i.CurrencyID = id
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetAvailableQuantity(quantity int) *AnnouncementRequest {
+	i.AvailableQuantity = quantity
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetBuyingMode(mode string) *AnnouncementRequest {
+	i.BuyingMode = mode
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetListingTypeID(id string) *AnnouncementRequest {
+	i.ListingTypeID = id
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetCondition(condition string) *AnnouncementRequest {
+	i.Condition = condition
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetDescription(description string) *AnnouncementRequest {
+	i.Description = description
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetVideoID(id string) *AnnouncementRequest {
+	i.VideoID = id
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetTags(tags []string) *AnnouncementRequest {
+	i.Tags = tags
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetWarranty(warranty string) *AnnouncementRequest {
+	i.Warranty = warranty
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetStatus(s status) *AnnouncementRequest {
+	i.Status = s
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetShipping(shipping Shipping) *AnnouncementRequest {
+	i.Shipping = shipping
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetSellerAddress(address SellerAddress) *AnnouncementRequest {
+	i.SellerAddress = address
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetLocation(location Location) *AnnouncementRequest {
+	i.Location = location
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetPictures(pictures []Picture) *AnnouncementRequest {
+	i.Pictures = pictures
+
+	return i
+}
+
+func (i *AnnouncementRequest) AddPicture(picture Picture) *AnnouncementRequest {
+	i.Pictures = append(i.Pictures, picture)
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetAttributes(attributes []Attribute) *AnnouncementRequest {
+	i.Attributes = attributes
+
+	return i
+}
+
+func (i *AnnouncementRequest) AddAttribute(attribute Attribute) *AnnouncementRequest {
+	i.Attributes = append(i.Attributes, attribute)
+
+	return i
+}
+
+func (i *AnnouncementRequest) SetVariations(variations []Variation) *AnnouncementRequest {
+	i.Variations = variations
+
+	return i
+}
+
+func (i *AnnouncementRequest) AddVariation(variation Variation) *AnnouncementRequest {
+	i.Variations = append(i.Variations, variation)
+
+	return i
+}
+
+// NewAnnouncement return a new Announcement with empty attributes
+func NewAnnouncementRequest() *AnnouncementRequest {
+	return &AnnouncementRequest{}
 }

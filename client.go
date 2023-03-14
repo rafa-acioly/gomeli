@@ -1,8 +1,9 @@
 package meli
 
 import (
-	"github.com/go-resty/resty/v2"
 	"time"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type HttpClientWrapper interface {
@@ -10,6 +11,9 @@ type HttpClientWrapper interface {
 	Post(resource string, data interface{}) (*resty.Response, error)
 	Put(resource string, data interface{}) (*resty.Response, error)
 	Delete(resource string, data interface{}) (*resty.Response, error)
+	SetResult(result interface{}) HttpClientWrapper
+	SetError(err interface{}) HttpClientWrapper
+	SetHeader(key, value string) HttpClientWrapper
 }
 
 type httpClientWrapper struct {
@@ -52,11 +56,34 @@ func (h httpClientWrapper) Get(resource string) (*resty.Response, error) {
 	return response, nil
 }
 
+// SetError implements HttpClientWrapper
+func (h *httpClientWrapper) SetError(err interface{}) HttpClientWrapper {
+	h.cli.SetError(err)
+
+	return h
+}
+
+// SetHeader implements HttpClientWrapper
+func (h *httpClientWrapper) SetHeader(key string, value string) HttpClientWrapper {
+	h.cli.SetHeader(key, value)
+
+	return h
+}
+
+// SetResult implements HttpClientWrapper
+func (h *httpClientWrapper) SetResult(result interface{}) HttpClientWrapper {
+	h.cli.SetResult(result)
+
+	return h
+}
+
 func NewHttpClient(m Meli) HttpClientWrapper {
-	return httpClientWrapper{cli: resty.New().
-		SetTimeout(time.Minute * 1).
+	return &httpClientWrapper{cli: resty.New().
+		SetTimeout(time.Second * 15).
 		SetDebug(true).
 		SetBaseURL(m.GetEnvironment().GetWsHost()).
+		SetRetryCount(3).
+		SetRetryMaxWaitTime(time.Second * 2).
 		SetHeaders(map[string]string{
 			"User-Agent":   "MELI-GOLANG-SDK",
 			"Content-Type": "application/json; charset=utf-8",

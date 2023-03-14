@@ -1,5 +1,7 @@
 package environments
 
+import "meli/storage"
+
 type site string
 
 const (
@@ -35,7 +37,7 @@ const (
 
 // GetWsAuth returns all site endpoint for authentication for each available country,
 // since there's no sandbox environment yet, we keep the URLS the same.
-// more information: https://api.mercadolibre.com/sites
+// [more information]: https://api.mercadolibre.com/sites
 var (
 	wsAuthProduction = map[site]string{
 		ARGENTINA:  "https://auth.mercadolibre.com.ar",
@@ -81,3 +83,25 @@ var (
 		DOMINICANA: "https://auth.mercadolibre.com.do",
 	}
 )
+
+// Configuration determine the resources
+// that will be used through the setup
+type Configuration interface {
+	GetStorage() storage.Storage
+}
+
+type configuration struct {
+	storage storage.Storage
+}
+
+// GetStorage return the storage mechanism that'll
+// be used to save the access token
+func (c configuration) GetStorage() storage.Storage {
+	return c.storage
+}
+
+func NewConfiguration(storage storage.Storage) Configuration {
+	return &configuration{
+		storage: storage,
+	}
+}

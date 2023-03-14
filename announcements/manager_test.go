@@ -1,11 +1,12 @@
 package announcements
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
 	"meli"
 	"meli/environments"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
 type AnnouncementTestSuite struct {
@@ -16,12 +17,12 @@ type AnnouncementTestSuite struct {
 
 func (test *AnnouncementTestSuite) SetupTest() {
 	testEnv := environments.NewSandboxEnv(environments.BRASIL, environments.NewConfiguration(nil))
-	test.m = meli.NewCustomClient("client-id", "client-secret", testEnv)
-	test.manager = NewAnnouncement(test.m)
+	test.m = meli.NewCustomClient("client-id", "client-secret", "random-tenant", testEnv)
+	test.manager = NewAnnouncementManager(test.m)
 }
 
 func (test *AnnouncementTestSuite) TestCanCreateNewAnnouncement() {
-	item := Item{ID: "id"}
+	item := AnnouncementRequest{ID: "id"}
 
 	_, err := test.manager.Create(item)
 
