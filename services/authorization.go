@@ -1,9 +1,7 @@
 package services
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"meli"
 	"meli/responses"
 	"net/http"
@@ -19,7 +17,7 @@ type AuthorizationService interface {
 	Authorize(code, redirectURI string) (string, error)
 	GetAccessToken() (string, error)
 	IsAuthorized() bool
-	getToken(map[string]string) (string, error)
+	getToken(url string, values url.Values) (responses.Authorization, responses.AuthorizationError, error)
 }
 
 type authorizationService struct {
@@ -27,7 +25,9 @@ type authorizationService struct {
 	meli meli.Meli
 }
 
-// Authorize exchange the code by a access token.
+// Authorize exchange the code given by mercado livre to an useful access token,
+// this code can be retrieved when the user allow the Oauth2 integration
+// using the method GetOAuthURL
 func (auth authorizationService) Authorize(code string, redirectURI string) (string, error) {
 	values := url.Values{}
 	values.Add("grant_type", "authorization_code")
@@ -37,49 +37,65 @@ func (auth authorizationService) Authorize(code string, redirectURI string) (str
 	values.Add("redirect_uri", redirectURI)
 
 	environment := auth.meli.GetEnvironment()
-	authorization := responses.Authorization{}
-	authorizationError := responses.AuthorizationError{}
-	response, err := auth.http.
-		SetHeader("skipOAuth", "true").
-		SetResult(&authorization).
-		SetError(&authorizationError).
-		Post(environment.GetOAuthURI(), values.Encode())
-
-	if err != nil || response.StatusCode() != http.StatusOK {
-		return "", fmt.Errorf("could not retrieve token error=%s message=%s", err.Error(), authorizationError.Message)
+	success, fail, err := auth.getToken(environment.GetOAuthURI(), values)
+	if err != nil {
+		return "", fmt.Errorf("could not retrieve token error=%s message=%s", err.Error(), fail.Message)
 	}
 
 	tokenService := NewAccessTokenService(
 		auth.meli.GetTenantID(),
 		auth.meli.GetEnvironment().GetConfiguration().GetStorage(),
 	)
-	tokenService.Save(authorization.AccessToken)
-	tokenService.SaveExpiration(strconv.Itoa(authorization.ExpireIn))
+	tokenService.Save(success.AccessToken)
+	tokenService.SaveExpiration(strconv.Itoa(success.ExpireIn))
 
-	return authorization.AccessToken, nil
+	return success.AccessToken, nil
 }
 
 // GetAccessToken return the access token, this form is recommended for scripts that run in automatic
 // routines (via cron, or scheduled tasks). OBS: to be able to use it, you need to have
-// Scope offline access checked in your APP.
+// Scope offline access checked in your APP
 func (auth authorizationService) GetAccessToken() (string, error) {
-	parameters := map[string]string{
-		"grant_type":    "client_credentials",
-		"client_id":     auth.meli.GetClientID(),
-		"client_secret": auth.meli.GetClientSecret(),
+	values := url.Values{}
+	values.Add("grant_type", "client_credentials")
+	values.Add("client_id", auth.meli.GetClientID())
+	values.Add("client_secret", auth.meli.GetClientSecret())
+
+	environment := auth.meli.GetEnvironment()
+	success, fail, err := auth.getToken(environment.GetOAuthURI(), values)
+	if err != nil {
+		return "", fmt.Errorf("could not retrieve token error=%s message=%s", err.Error(), fail.Message)
 	}
 
-	return auth.getToken(parameters)
+	tokenService := NewAccessTokenService(
+		auth.meli.GetTenantID(),
+		auth.meli.GetEnvironment().GetConfiguration().GetStorage(),
+	)
+	tokenService.Save(success.AccessToken)
+	tokenService.SaveExpiration(strconv.Itoa(success.ExpireIn))
+
+	return success.AccessToken, nil
 }
 
 // GetAuthorizationCode implements AuthorizationService
-func (auth authorizationService) GetAuthorizationCode(redirectURI string) string {
-	panic("unimplemented")
+func (auth authorizationService) GetAuthorizationCode(redirectURI string) (string, error) {
+	values := url.Values{}
+	values.Add("grant_type", "code")
+	values.Add("client_id", auth.meli.GetClientID())
+	values.Add("redirect_uri", redirectURI)
+
+	environment := auth.meli.GetEnvironment()
+	success, fail, err := auth.getToken(environment.GetOAuthURI(), values)
+	if err != nil {
+		return "", fmt.Errorf("could not retrieve token error=%s message=%s", err.Error(), fail.Message)
+	}
+
+	return success.AccessToken, nil
 }
 
 // GetOAuthURL return the URL used to authorize Oauth2 integration,
 // this URL will lead to mercado livre's page asking for
-// an user authorization to use your app.
+// an user authorization to use your app
 func (auth *authorizationService) GetOAuthURL(redirectURI string) string {
 	environment := auth.meli.GetEnvironment()
 
@@ -107,35 +123,29 @@ func (auth *authorizationService) IsAuthorized() bool {
 	return accessTokenService.IsValid()
 }
 
-func (auth *authorizationService) getToken(data map[string]string) (string, error) {
-	environment := auth.meli.GetEnvironment()
-	uri := environment.GetOAuthURI()
+func (auth *authorizationService) getToken(url string, values url.Values) (responses.Authorization, responses.AuthorizationError, error) {
+	authorization := responses.Authorization{}
+	authorizationError := responses.AuthorizationError{}
+	response, err := auth.http.
+		SetHeader("skipOAuth", "true").
+		SetResult(&authorization).
+		SetError(&authorizationError).
+		Post(url, values.Encode())
 
-	response, err := http.Post(uri, "application/json", nil)
-	if err != nil {
-		return "", err
-	}
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return "", err
-	}
-
-	authorization := &responses.Authorization{}
-	if err := json.Unmarshal(body, authorization); err != nil {
-		return "", err
+	if err != nil || response.StatusCode() != http.StatusOK {
+		errorContent := fmt.Errorf(
+			"could not retrieve token, status=%d message=%s",
+			response.StatusCode(),
+			authorizationError.Message,
+		)
+		return authorization, authorizationError, errorContent
 	}
 
-	storage := environment.GetConfiguration().GetStorage()
-	accessTokenService := NewAccessTokenService(auth.meli.GetTenantID(), storage)
-	accessTokenService.Save(authorization.AccessToken)
-	accessTokenService.SaveRefreshToken(authorization.RefreshToken)
-	accessTokenService.SaveExpiration(strconv.Itoa(authorization.ExpireIn))
-
-	return authorization.AccessToken, nil
+	return authorization, authorizationError, nil
 }
 
+// NewAuthorizationService is responsible for handling authorization requests,
+// and retrieving access tokens
 func NewAuthorizationService(m meli.Meli) AuthorizationService {
 	return &authorizationService{meli: m, http: meli.NewHttpClient(m)}
 }
