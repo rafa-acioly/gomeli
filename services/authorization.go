@@ -85,7 +85,7 @@ func (auth authorizationService) GetAuthorizationCode(redirectURI string) (strin
 	values.Add("redirect_uri", redirectURI)
 
 	environment := auth.meli.GetEnvironment()
-	success, fail, err := auth.getToken(environment.GetOAuthURI(), values)
+	success, fail, err := auth.getToken(environment.GetWsAuth(), values)
 	if err != nil {
 		return "", fmt.Errorf("could not retrieve token error=%s message=%s", err.Error(), fail.Message)
 	}
